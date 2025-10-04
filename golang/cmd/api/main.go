@@ -54,7 +54,8 @@ func assetHandler(client *binance.Client) http.HandlerFunc {
 
 func main() {
 	mux := http.NewServeMux()
-	assetClient := binance.NewClient("https://api.binance.com")
+	apiUrl := env.GetOrElse("ASSET_API_URL", "https://api.binance.com")
+	assetClient := binance.NewClient(apiUrl)
 
 	mux.HandleFunc("/v1/healthz", get(healthzHandler))
 	mux.HandleFunc("/v1/asset", get(assetHandler(assetClient)))
