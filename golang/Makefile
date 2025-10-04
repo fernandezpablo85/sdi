@@ -1,4 +1,4 @@
-.PHONY: build build-cli build-api clean
+.PHONY: build build-cli build-api test clean
 
 build: build-cli build-api
 
@@ -7,6 +7,9 @@ build-cli:
 
 build-api:
 	go build -o bin/api ./cmd/api
+
+test:
+	go test -v ./...
 
 clean:
 	rm -rf bin/

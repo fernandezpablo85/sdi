@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
 
+	"github.com/fernandezpablo85/sdi/internal/binance"
 	"github.com/fernandezpablo85/sdi/internal/env"
 )
 
@@ -25,23 +27,37 @@ func healthzHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
-func assetHanlder(w http.ResponseWriter, r *http.Request) {
-	name := r.URL.Query().Get("name")
-	if name == "" {
-		slog.Debug("missing asset name", "status", http.StatusBadRequest)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Missing asset name"))
-		return
+func assetHandler(client *binance.Client) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		name := r.URL.Query().Get("name")
+		if name == "" {
+			msg := "missing asset name"
+			slog.Debug(msg, "status", http.StatusBadRequest)
+			http.Error(w, msg, http.StatusBadRequest)
+			return
+		}
+		slog.Info("fetching asset price", "asset", name)
+		price, err := client.GetPrice(name)
+		if err != nil {
+			msg := "error fetching asset price"
+			slog.Error(msg, "asset", name, "error", err)
+			http.Error(w, msg, http.StatusBadGateway)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{
+			"asset": name,
+			"price": price,
+		})
 	}
-	slog.Info("fetching asset price", "asset", name)
-	fmt.Fprintf(w, "Fetching %s price...\n", name)
 }
 
 func main() {
 	mux := http.NewServeMux()
+	assetClient := binance.NewClient("https://api.binance.com")
 
 	mux.HandleFunc("/v1/healthz", get(healthzHandler))
-	mux.HandleFunc("/v1/asset", get(assetHanlder))
+	mux.HandleFunc("/v1/asset", get(assetHandler(assetClient)))
 
 	port := env.GetIntOrElse("PORT", DEFAULT_PORT)
 	server := &http.Server{
