@@ -1,4 +1,4 @@
-.PHONY: build build-cli build-api test clean
+.PHONY: build build-cli build-api test coverage clean
 
 build: build-cli build-api
 
@@ -14,5 +14,10 @@ test:
 test-no-cache:
 	gotestsum --format testname -- -count=1 ./...
 
+coverage:
+	go test -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated: coverage.html"
+
 clean:
-	rm -rf bin/
+	rm -rf bin/ coverage.out coverage.html

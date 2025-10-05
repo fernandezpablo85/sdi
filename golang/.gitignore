@@ -32,3 +32,6 @@ Thumbs.db
 # LLM temp files
 plan.md
 
+# Test coverage
+coverage.html
+
