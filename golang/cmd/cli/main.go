@@ -55,18 +55,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.requestsSent++
 			assetName := "BTCUSDT"
 			res, err := m.client.GetAssetPrice(assetName)
+			var statusCode int
 			if err != nil {
 				m.requestErr++
-				return m, tick()
-			}
-			if res.StatusCode == http.StatusOK {
+				statusCode = 0
+			} else if res.StatusCode == http.StatusOK {
+				statusCode = 200
 				m.requestsSuccess++
 			} else {
-				m.requests429++
 				// we assume for now that <> 200 is 429
-				res.StatusCode = 429
+				statusCode = 429
+				m.requests429++
 			}
-			m.history = append(m.history, res.StatusCode)
+			m.history = append(m.history, statusCode)
 			if len(m.history) > maxHistory {
 				m.history = m.history[1:]
 			}
@@ -80,13 +81,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func renderHistory(history []int) string {
 	successStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("10")) // Green
 	failStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("9"))     // Red
+	errorStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#555"))
 
 	var result string
 	for _, code := range history {
-		if code == 200 {
+		switch code {
+		case 200:
 			result += successStyle.Render("█")
-		} else {
+		case 429:
 			result += failStyle.Render("█")
+		case 0:
+			result += errorStyle.Render("█")
 		}
 	}
 	return result
@@ -134,6 +139,7 @@ func (m model) View() string {
 			"Requests Sent:    %d\n"+
 			"Success (200):    %d\n"+
 			"Rate Limited:     %d\n\n"+
+			"Network Errors:   %d\n\n"+
 			"History (last %d):\n%s\n\n"+
 			"%s",
 		subtitleStyle.Render("System Design Interview"),
@@ -142,6 +148,7 @@ func (m model) View() string {
 		m.requestsSent,
 		m.requestsSuccess,
 		m.requests429,
+		m.requestErr,
 		len(m.history),
 		renderHistory(m.history),
 		helpStyle.Render("[space] start/stop  [q] quit"),
@@ -159,20 +166,6 @@ func main() {
 	if !pong {
 		log.Fatalf("could not ping api at %s", baseUrl)
 	}
-
-	// slog.Info("ping success")
-
-	// assetName := "BTCUSDC"
-	// slog.Info("fetching asset price", "asset", assetName)
-	// res, err := cli.GetAssetPrice(assetName)
-	// if err != nil {
-	// 	log.Fatalf("error while fetching price: %v", err)
-	// }
-	// if res.StatusCode != http.StatusOK {
-	// 	log.Fatalf("http error: %d", res.StatusCode)
-	// }
-	// slog.Info("asset price found", "asset", assetName, "price", res.Data.Price)
-
 	p := tea.NewProgram(model{isRunning: false, client: cli})
 	p.Run()
 }
