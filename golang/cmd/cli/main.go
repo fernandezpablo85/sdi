@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -13,6 +14,12 @@ import (
 )
 
 const maxHistory = 45
+
+var (
+	successStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#4a4"))
+	rateLimitStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#a44"))
+	errorStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#555"))
+)
 
 type model struct {
 	client          *client.HttpClient
@@ -79,9 +86,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func renderHistory(history []int) string {
-	successStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("10")) // Green
-	failStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("9"))     // Red
-	errorStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#555"))
 
 	var result string
 	for _, code := range history {
@@ -89,7 +93,7 @@ func renderHistory(history []int) string {
 		case 200:
 			result += successStyle.Render("█")
 		case 429:
-			result += failStyle.Render("█")
+			result += rateLimitStyle.Render("█")
 		case 0:
 			result += errorStyle.Render("█")
 		}
@@ -137,18 +141,18 @@ func (m model) View() string {
 			"%s\n\n"+
 			"Status: %s\n\n"+
 			"Requests Sent:    %d\n"+
-			"Success (200):    %d\n"+
-			"Rate Limited:     %d\n\n"+
-			"Network Errors:   %d\n\n"+
+			"Success (200):    %s\n"+
+			"Rate Limited:     %s\n\n"+
+			"Network Errors:   %s\n\n"+
 			"History (last %d):\n%s\n\n"+
 			"%s",
 		subtitleStyle.Render("System Design Interview"),
 		titleStyle.Render("Rate Limiter Visualizer"),
 		statusStyle.Render(status),
 		m.requestsSent,
-		m.requestsSuccess,
-		m.requests429,
-		m.requestErr,
+		successStyle.Render(strconv.Itoa(m.requestsSuccess)),
+		rateLimitStyle.Render(strconv.Itoa(m.requests429)),
+		errorStyle.Render(strconv.Itoa(m.requestErr)),
 		len(m.history),
 		renderHistory(m.history),
 		helpStyle.Render("[space] start/stop  [q] quit"),
