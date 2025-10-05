@@ -21,7 +21,7 @@ func main() {
 
 	slog.Info("ping success")
 
-	assetName := "BTCUSDT"
+	assetName := "BTCUSDN"
 	slog.Info("fetching asset price", "asset", assetName)
 	price, err := cli.GetAssetPrice(assetName)
 	if err != nil {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -43,6 +44,12 @@ func assetHandler(client Pricer) http.HandlerFunc {
 		}
 		slog.Info("fetching asset price", "asset", name)
 		price, err := client.GetPrice(name)
+		if errors.Is(err, api.ErrAssetNotFound) {
+			msg := "asset unknown"
+			slog.Error(msg, "asset", name, "error", err)
+			http.Error(w, msg, http.StatusNotFound)
+			return
+		}
 		if err != nil {
 			msg := "error fetching asset price"
 			slog.Error(msg, "asset", name, "error", err)

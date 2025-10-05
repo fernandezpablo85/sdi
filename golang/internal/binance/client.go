@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/fernandezpablo85/sdi/internal/api"
 )
 
 type Client struct {
@@ -32,6 +34,9 @@ func (c *Client) GetPrice(symbol string) (float64, error) {
 		return 0.0, err
 	}
 	defer res.Body.Close()
+	if res.StatusCode == http.StatusBadRequest {
+		return 0.0, api.ErrAssetNotFound
+	}
 	if res.StatusCode != http.StatusOK {
 		return 0.0, fmt.Errorf("unexpected status: %d", res.StatusCode)
 	}
