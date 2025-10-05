@@ -28,3 +28,7 @@ vendor/
 # OS
 .DS_Store
 Thumbs.db
+
+# LLM temp files
+plan.md
+
