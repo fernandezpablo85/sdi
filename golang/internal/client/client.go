@@ -9,6 +9,11 @@ import (
 	"github.com/fernandezpablo85/sdi/internal/api"
 )
 
+type ClientResponse struct {
+	StatusCode int
+	Data       *api.AssetResponse
+}
+
 type HttpClient struct {
 	baseURL    string
 	httpClient *http.Client
@@ -21,24 +26,23 @@ func NewClient(baseURL string) *HttpClient {
 	}
 }
 
-func (c *HttpClient) GetAssetPrice(name string) (float64, error) {
+func (c *HttpClient) GetAssetPrice(name string) (*ClientResponse, error) {
 	path := fmt.Sprintf("%s/v1/asset?name=%s", c.baseURL, name)
 	res, err := c.httpClient.Get(path)
 	if err != nil {
-		return 0.0, err
+		return nil, err
 	}
-	if res.StatusCode != http.StatusOK {
-		return 0.0, fmt.Errorf("unexpected status code: %d", res.StatusCode)
-	}
-
 	defer res.Body.Close()
-
-	body := api.AssetResponse{}
-	err = json.NewDecoder(res.Body).Decode(&body)
-	if err != nil {
-		return 0.0, err
+	resp := &ClientResponse{StatusCode: res.StatusCode}
+	if res.StatusCode == http.StatusOK {
+		body := api.AssetResponse{}
+		err = json.NewDecoder(res.Body).Decode(&body)
+		if err != nil {
+			return nil, err
+		}
+		resp.Data = &body
 	}
-	return body.Price, nil
+	return resp, nil
 }
 
 func (c *HttpClient) Ping() bool {

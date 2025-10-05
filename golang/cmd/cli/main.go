@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"net/http"
 
 	"github.com/fernandezpablo85/sdi/internal/client"
 	"github.com/fernandezpablo85/sdi/internal/env"
@@ -21,11 +22,14 @@ func main() {
 
 	slog.Info("ping success")
 
-	assetName := "BTCUSDN"
+	assetName := "BTCUSDC"
 	slog.Info("fetching asset price", "asset", assetName)
-	price, err := cli.GetAssetPrice(assetName)
+	res, err := cli.GetAssetPrice(assetName)
 	if err != nil {
 		log.Fatalf("error while fetching price: %v", err)
 	}
-	slog.Info("asset price found", "asset", assetName, "price", price)
+	if res.StatusCode != http.StatusOK {
+		log.Fatalf("http error: %d", res.StatusCode)
+	}
+	slog.Info("asset price found", "asset", assetName, "price", res.Data.Price)
 }
