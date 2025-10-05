@@ -9,7 +9,10 @@ build-api:
 	go build -o bin/api ./cmd/api
 
 test:
-	go test -v ./...
+	gotestsum --format testname
+
+test-no-cache:
+	gotestsum --format testname -- -count=1 ./...
 
 clean:
 	rm -rf bin/
