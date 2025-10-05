@@ -34,10 +34,13 @@ func TestHealthz(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			mux := http.NewServeMux()
+			setupRoutes(mux, nil)
+
 			req := httptest.NewRequest(tt.method, "/v1/healthz", nil)
 			w := httptest.NewRecorder()
 
-			only(http.MethodGet, healthzHandler)(w, req)
+			mux.ServeHTTP(w, req)
 
 			if w.Code != tt.expectedStatus {
 				t.Fatalf("expected status to be %d but was %d", tt.expectedStatus, w.Code)

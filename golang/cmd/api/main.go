@@ -56,13 +56,17 @@ func assetHandler(client Pricer) http.HandlerFunc {
 	}
 }
 
+func setupRoutes(mux *http.ServeMux, pricer Pricer) {
+	mux.HandleFunc("/v1/healthz", only(http.MethodGet, healthzHandler))
+	mux.HandleFunc("/v1/asset", only(http.MethodGet, assetHandler(pricer)))
+}
+
 func main() {
 	mux := http.NewServeMux()
 	apiUrl := env.GetOrElse("ASSET_API_URL", "https://api.binance.com")
 	assetClient := binance.NewClient(apiUrl)
 
-	mux.HandleFunc("/v1/healthz", only(http.MethodGet, healthzHandler))
-	mux.HandleFunc("/v1/asset", only(http.MethodGet, assetHandler(assetClient)))
+	setupRoutes(mux, assetClient)
 
 	port := env.GetIntOrElse("PORT", DEFAULT_PORT)
 	server := &http.Server{
