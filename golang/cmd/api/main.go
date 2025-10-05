@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/fernandezpablo85/sdi/internal/api"
 	"github.com/fernandezpablo85/sdi/internal/binance"
 	"github.com/fernandezpablo85/sdi/internal/env"
 )
@@ -49,10 +50,7 @@ func assetHandler(client Pricer) http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{
-			"asset": name,
-			"price": price,
-		})
+		json.NewEncoder(w).Encode(api.AssetResponse{Name: name, Price: price})
 	}
 }
 
