@@ -12,7 +12,7 @@ func TestGetPrice(t *testing.T) {
 	expectedPrice := 43250.12
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, `{"symbol":"%s","price":%f}`, asset, expectedPrice)
+		fmt.Fprintf(w, `{"symbol":"%s","price":"%f"}`, asset, expectedPrice)
 	}))
 	defer server.Close()
 

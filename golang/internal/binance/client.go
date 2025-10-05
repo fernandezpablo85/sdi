@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -13,8 +14,8 @@ type Client struct {
 }
 
 type priceResponse struct {
-	Symbol string  `json:"symbol"`
-	Price  float64 `json:"price"`
+	Symbol string `json:"symbol"`
+	Price  string `json:"price"`
 }
 
 func NewClient(baseURL string) *Client {
@@ -39,5 +40,9 @@ func (c *Client) GetPrice(symbol string) (float64, error) {
 	if err != nil {
 		return 0.0, err
 	}
-	return body.Price, nil
+	price, err := strconv.ParseFloat(body.Price, 64)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse price %q: %w", body.Price, err)
+	}
+	return price, nil
 }

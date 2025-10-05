@@ -12,9 +12,13 @@ import (
 
 const DEFAULT_PORT = 8080
 
-func get(f http.HandlerFunc) http.HandlerFunc {
+type Pricer interface {
+	GetPrice(assetName string) (float64, error)
+}
+
+func only(method string, f http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
+		if r.Method != method {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
@@ -27,7 +31,7 @@ func healthzHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
-func assetHandler(client *binance.Client) http.HandlerFunc {
+func assetHandler(client Pricer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		name := r.URL.Query().Get("name")
 		if name == "" {
@@ -57,8 +61,8 @@ func main() {
 	apiUrl := env.GetOrElse("ASSET_API_URL", "https://api.binance.com")
 	assetClient := binance.NewClient(apiUrl)
 
-	mux.HandleFunc("/v1/healthz", get(healthzHandler))
-	mux.HandleFunc("/v1/asset", get(assetHandler(assetClient)))
+	mux.HandleFunc("/v1/healthz", only(http.MethodGet, healthzHandler))
+	mux.HandleFunc("/v1/asset", only(http.MethodGet, assetHandler(assetClient)))
 
 	port := env.GetIntOrElse("PORT", DEFAULT_PORT)
 	server := &http.Server{
