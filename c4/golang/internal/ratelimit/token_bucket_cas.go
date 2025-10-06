@@ -18,8 +18,13 @@ type TokenBucketCas struct {
 }
 
 func (t *TokenBucketCas) Allow(key string) bool {
-	val, _ := t.buckets.LoadOrStore(key, t.newBucket())
-	b := val.(*bucket)
+	if val, ok := t.buckets.Load(key); ok {
+		b := val.(*bucket)
+		return b.allow()
+	}
+	newBucket := t.newBucket()
+	actual, _ := t.buckets.LoadOrStore(key, newBucket)
+	b := actual.(*bucket)
 	return b.allow()
 }
 

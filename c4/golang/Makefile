@@ -1,4 +1,4 @@
-.PHONY: build build-cli build-api test coverage clean
+.PHONY: build build-cli build-api test coverage benchmark clean
 
 build: build-cli build-api
 
@@ -18,6 +18,9 @@ coverage:
 	go test -coverprofile=coverage.out ./...
 	go tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report generated: coverage.html"
+
+benchmark:
+	go test -bench=. -benchmem ./...
 
 clean:
 	rm -rf bin/ coverage.out coverage.html
