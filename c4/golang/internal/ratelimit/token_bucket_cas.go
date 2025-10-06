@@ -7,8 +7,7 @@ import (
 )
 
 type bucket struct {
-	tokens   atomic.Int32
-	capacity int32
+	tokens atomic.Int32
 }
 
 type TokenBucketCas struct {
@@ -25,13 +24,13 @@ func (t *TokenBucketCas) Allow(key string) bool {
 }
 
 func (t *TokenBucketCas) newBucket() *bucket {
-	b := bucket{capacity: t.capacity}
+	b := bucket{}
 	b.tokens.Store(t.capacity)
 	go func() {
 		for range time.Tick(t.refillPeriod) {
 			for {
 				current := b.tokens.Load()
-				updated := min(b.capacity, current+t.refillAmount)
+				updated := min(t.capacity, current+t.refillAmount)
 				ok := b.tokens.CompareAndSwap(current, updated)
 				if ok {
 					break
