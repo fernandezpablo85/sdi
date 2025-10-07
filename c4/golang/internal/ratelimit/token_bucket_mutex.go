@@ -18,24 +18,26 @@ type TokenBucketMutex struct {
 }
 
 func NewTokenBucketMutex(capacity, refillAmount int32, refillPeriod time.Duration) *TokenBucketMutex {
-	return &TokenBucketMutex{
+	t := &TokenBucketMutex{
 		capacity:     capacity,
 		refillAmount: refillAmount,
 		refillPeriod: refillPeriod,
 		buckets:      make(map[string]*lockBucket),
 	}
+	go func() {
+		for range time.Tick(t.refillPeriod) {
+			for _, b := range t.buckets {
+				t.lock.Lock()
+				b.tokens = min(t.capacity, b.tokens+t.refillAmount)
+				t.lock.Unlock()
+			}
+		}
+	}()
+	return t
 }
 
 func (t *TokenBucketMutex) newLockBucket() *lockBucket {
-	b := &lockBucket{tokens: t.capacity}
-	go func() {
-		for range time.Tick(t.refillPeriod) {
-			t.lock.Lock()
-			b.tokens = min(t.capacity, b.tokens+t.refillAmount)
-			t.lock.Unlock()
-		}
-	}()
-	return b
+	return &lockBucket{tokens: t.capacity}
 }
 
 func (t *TokenBucketMutex) Allow(key string) bool {

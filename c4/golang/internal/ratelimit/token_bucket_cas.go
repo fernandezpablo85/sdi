@@ -31,18 +31,6 @@ func (t *TokenBucketCas) Allow(key string) bool {
 func (t *TokenBucketCas) newBucket() *bucket {
 	b := bucket{}
 	b.tokens.Store(t.capacity)
-	go func() {
-		for range time.Tick(t.refillPeriod) {
-			for {
-				current := b.tokens.Load()
-				updated := min(t.capacity, current+t.refillAmount)
-				ok := b.tokens.CompareAndSwap(current, updated)
-				if ok {
-					break
-				}
-			}
-		}
-	}()
 	return &b
 }
 
@@ -61,5 +49,22 @@ func (b *bucket) allow() bool {
 }
 
 func NewTokenBucketCas(capacity, refillAmount int32, refillPeriod time.Duration) *TokenBucketCas {
-	return &TokenBucketCas{capacity: capacity, refillAmount: refillAmount, refillPeriod: refillPeriod}
+	t := &TokenBucketCas{capacity: capacity, refillAmount: refillAmount, refillPeriod: refillPeriod}
+	go func() {
+		for range time.Tick(t.refillPeriod) {
+			t.buckets.Range(func(key, value any) bool {
+				for {
+					b := value.(*bucket)
+					current := b.tokens.Load()
+					updated := min(t.capacity, current+t.refillAmount)
+					ok := b.tokens.CompareAndSwap(current, updated)
+					if ok {
+						break
+					}
+				}
+				return true
+			})
+		}
+	}()
+	return t
 }
